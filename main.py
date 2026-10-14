@@ -4,30 +4,26 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Application
-from pydantic import BaseModel
-from typing import Literal
+from schemas import (
+    ApplicationCreate,
+    ApplicationResponse,
+    ApplicationStatus,
+    ApplicationUpdate,
+)
 
-app =FastAPI()
 
-ApplicationStatus = Literal[
-    "applied",
-    "interview",
-    "offer",
-    "rejected",
-    "withdrawn"
-]
+app = FastAPI()
+
 
 @app.get("/")
 def read_root():
-    return{"message": "Job Tracker API is running"}
+    return {"message": "Job Tracker API is running"}
 
 
-class ApplicationCreate(BaseModel):
-    company: str
-    role: str
-    status: ApplicationStatus
-
-@app.get("/applications")
+@app.get(
+    "/applications",
+    response_model=list[ApplicationResponse]
+)
 def get_applications(
     db: Session = Depends(get_db),
     status: ApplicationStatus | None = None
@@ -41,7 +37,11 @@ def get_applications(
 
     return db.scalars(statement).all()
 
-@app.get("/applications/{application_id}")
+
+@app.get(
+    "/applications/{application_id}",
+    response_model=ApplicationResponse
+)
 def get_application(
     application_id: int,
     db: Session = Depends(get_db)
@@ -56,7 +56,12 @@ def get_application(
 
     return application
 
-@app.post("/applications", status_code=201)
+
+@app.post(
+    "/applications",
+    response_model=ApplicationResponse,
+    status_code=201
+)
 def create_application(
     new_application: ApplicationCreate,
     db: Session = Depends(get_db)
@@ -74,10 +79,10 @@ def create_application(
     return application
 
 
-class ApplicationUpdate(BaseModel):
-    status: ApplicationStatus
-
-@app.patch("/applications/{application_id}")
+@app.patch(
+    "/applications/{application_id}",
+    response_model=ApplicationResponse
+)
 def update_application(
     application_id: int,
     update: ApplicationUpdate,
@@ -97,7 +102,11 @@ def update_application(
 
     return application
 
-@app.delete("/applications/{application_id}", status_code=204)
+
+@app.delete(
+    "/applications/{application_id}",
+    status_code=204
+)
 def delete_application(
     application_id: int,
     db: Session = Depends(get_db)
