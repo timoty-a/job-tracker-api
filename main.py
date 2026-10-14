@@ -1,4 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from database import get_db
+from models import Application
 from pydantic import BaseModel
 from typing import Literal
 
@@ -22,85 +27,81 @@ class ApplicationCreate(BaseModel):
     role: str
     status: ApplicationStatus
 
-applications = [
-    {
-        "id": 1,
-        "company": "Paystack",
-        "role": "Backend Engineering Intern",
-        "status": "applied"
-    },
-    {
-        "id": 2,
-        "company": "Flutterwave",
-        "role": "Junior Backend Engineer",
-        "status": "interview"
-    }
-]
-
 @app.get("/applications")
-def get_applications():
+def get_applications(db: Session = Depends(get_db)):
+    statement = select(Application)
+    applications = db.scalars(statement).all()
+
     return applications
 
 @app.get("/applications/{application_id}")
+def get_application(
+    application_id: int,
+    db: Session = Depends(get_db)
+):
+    application = db.get(Application, application_id)
 
+    if application is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Application not found"
+        )
 
-def get_application(application_id: int):
-    for application in applications:
-        if application["id"] == application_id:
-            return application
-
-    raise HTTPException(
-        status_code=404,
-        detail="Application not found"
-    )
+    return application
 
 @app.post("/applications", status_code=201)
+def create_application(
+    new_application: ApplicationCreate,
+    db: Session = Depends(get_db)
+):
+    application = Application(
+        company=new_application.company,
+        role=new_application.role,
+        status=new_application.status
+    )
 
-def create_application(new_application: ApplicationCreate):
-    new_id = max(
-        [application["id"] for application in applications],
-        default=0
-    ) + 1
+    db.add(application)
+    db.commit()
+    db.refresh(application)
 
-    application = {
-        "id": new_id,
-        "company": new_application.company,
-        "role": new_application.role,
-        "status": new_application.status
-    }
-
-    applications.append(application)
     return application
 
 
 class ApplicationUpdate(BaseModel):
     status: ApplicationStatus
 
-
 @app.patch("/applications/{application_id}")
 def update_application(
     application_id: int,
-    update: ApplicationUpdate
+    update: ApplicationUpdate,
+    db: Session = Depends(get_db)
 ):
-    for application in applications:
-        if application["id"] == application_id:
-            application["status"] = update.status
-            return application
+    application = db.get(Application, application_id)
 
-    raise HTTPException(
-        status_code=404,
-        detail="Application not found"
-    )
-
-
-@app.delete("/applications/{application_id}", status_code=204)
-def delete_application(application_id: int):
-    for application in applications:
-        if application["id"] == application_id:
-            applications.remove(application)
-            return
-        
-    raise HTTPException(
+    if application is None:
+        raise HTTPException(
             status_code=404,
             detail="Application not found"
         )
+
+    application.status = update.status
+    db.commit()
+    db.refresh(application)
+
+    return application
+
+@app.delete("/applications/{application_id}", status_code=204)
+def delete_application(
+    application_id: int,
+    db: Session = Depends(get_db)
+):
+    application = db.get(Application, application_id)
+
+    if application is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Application not found"
+        )
+
+    db.delete(application)
+    db.commit()
