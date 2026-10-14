@@ -138,3 +138,36 @@ def test_delete_missing_application():
     response = client.delete("/applications/999")
 
     assert response.status_code == 404
+
+def test_filter_applications_by_status():
+    create_test_application()
+
+    client.post(
+        "/applications",
+        json={
+            "company": "Flutterwave",
+            "role": "Junior Backend Engineer",
+            "status": "interview"
+        }
+    )
+
+    response = client.get(
+        "/applications",
+        params={"status": "interview"}
+    )
+
+    data = response.json()
+
+    assert response.status_code == 200
+    assert len(data) == 1
+    assert data[0]["company"] == "Flutterwave"
+    assert data[0]["status"] == "interview"
+
+
+def test_reject_invalid_status_filter():
+    response = client.get(
+        "/applications",
+        params={"status": "waiting"}
+    )
+
+    assert response.status_code == 422

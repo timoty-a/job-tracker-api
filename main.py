@@ -28,11 +28,18 @@ class ApplicationCreate(BaseModel):
     status: ApplicationStatus
 
 @app.get("/applications")
-def get_applications(db: Session = Depends(get_db)):
+def get_applications(
+    db: Session = Depends(get_db),
+    status: ApplicationStatus | None = None
+):
     statement = select(Application)
-    applications = db.scalars(statement).all()
 
-    return applications
+    if status is not None:
+        statement = statement.where(
+            Application.status == status
+        )
+
+    return db.scalars(statement).all()
 
 @app.get("/applications/{application_id}")
 def get_application(
