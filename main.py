@@ -1,7 +1,16 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import Literal
 
 app =FastAPI()
+
+ApplicationStatus = Literal[
+    "applied",
+    "interview",
+    "offer",
+    "rejected",
+    "withdrawn"
+]
 
 @app.get("/")
 def read_root():
@@ -11,7 +20,8 @@ def read_root():
 class ApplicationCreate(BaseModel):
     company: str
     role: str
-    status: str
+    status: ApplicationStatus
+
 applications = [
     {
         "id": 1,
@@ -46,20 +56,25 @@ def get_application(application_id: int):
 
 @app.post("/applications", status_code=201)
 
-
 def create_application(new_application: ApplicationCreate):
+    new_id = max(
+        [application["id"] for application in applications],
+        default=0
+    ) + 1
+
     application = {
-        "id": len(applications) + 1,
+        "id": new_id,
         "company": new_application.company,
         "role": new_application.role,
         "status": new_application.status
     }
+
     applications.append(application)
     return application
 
 
 class ApplicationUpdate(BaseModel):
-    status: str
+    status: ApplicationStatus
 
 
 @app.patch("/applications/{application_id}")
