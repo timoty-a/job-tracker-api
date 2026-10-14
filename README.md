@@ -108,8 +108,8 @@ http://127.0.0.1:8000/docs
 
 ```json
 {
-  "company": "Paystack",
-  "role": "Backend Engineering Intern",
+  "company": "Google",
+  "role": "Software engineer",
   "status": "applied",
   "date_applied": "2026-08-25"
 }
