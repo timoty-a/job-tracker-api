@@ -48,10 +48,10 @@ def create_test_application():
         json={
             "company": "Paystack",
             "role": "Backend Engineering Intern",
-            "status": "applied"
+            "status": "applied",
+            "date_applied": "2026-08-25"
         }
     )
-
 
 def test_read_root():
     response = client.get("/")
@@ -78,6 +78,7 @@ def test_create_application():
     assert data["role"] == "Backend Engineering Intern"
     assert data["status"] == "applied"
     assert isinstance(data["id"], int)
+    assert data["date_applied"] == "2026-08-25"
 
 
 def test_get_application():
@@ -168,6 +169,19 @@ def test_reject_invalid_status_filter():
     response = client.get(
         "/applications",
         params={"status": "waiting"}
+    )
+
+    assert response.status_code == 422
+
+def test_reject_invalid_date():
+    response = client.post(
+        "/applications",
+        json={
+            "company": "Paystack",
+            "role": "Backend Engineer",
+            "status": "applied",
+            "date_applied": "not-a-date"
+        }
     )
 
     assert response.status_code == 422

@@ -2,7 +2,9 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
+from datetime import date
 
+from sqlalchemy import Date, String, func
 
 class Application(Base):
     __tablename__ = "applications"
@@ -11,3 +13,8 @@ class Application(Base):
     company: Mapped[str] = mapped_column(String(100))
     role: Mapped[str] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(20))
+    date_applied: Mapped[date] = mapped_column(
+    Date,
+    default=date.today,
+    server_default=func.current_date()
+)
